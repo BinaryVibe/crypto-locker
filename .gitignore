@@ -1,0 +1,11 @@
+# 1. Ignore Python Cache (Temporary hidden folders Python makes)
+__pycache__/
+*.pyc
+
+# 2. Ignore Mac/Windows system junk
+.DS_Store
+Thumbs.db
+
+# 3. Ignore the encrypted dummy files! 
+# (We want Ashir to generate his own fresh dummies, not download yours)
+sandbox/*.locked
