@@ -9,3 +9,6 @@ Thumbs.db
 # 3. Ignore the encrypted dummy files! 
 # (We want Ashir to generate his own fresh dummies, not download yours)
 sandbox/*.locked
+
+# 4. Ignore the C2 server's config file, which contains sensitive info
+c2_server/config.php
