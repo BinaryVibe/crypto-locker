@@ -14,8 +14,8 @@ def show_alert_window():
     root.title("Simulation Alert: Environment Modified")
     
     # Window Dimensions and Positioning
-    window_width = 600
-    window_height = 550  # Sized to accommodate the image cleanly
+    window_width = 650
+    window_height = 680  # Adjusted to scale properly with the larger 350x350 thumbnail box
     
     # Calculate screen center
     screen_width = root.winfo_screenwidth()
@@ -38,7 +38,7 @@ def show_alert_window():
         fg="#E74C3C", 
         bg="#1A1A1A"
     )
-    title_label.pack(pady=(30, 10))
+    title_label.pack(pady=(20, 5))
 
     # 2. Dynamic Resource Image Loading Logic (JPG Support via Pillow)
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -49,9 +49,8 @@ def show_alert_window():
             # Open the JPG image file using Pillow
             pil_image = Image.open(image_path)
             
-            # Optional: Resize the image to a fixed bounding box (e.g., max 150x150 pixels)
-            # while maintaining aspect ratio automatically if desired
-            pil_image.thumbnail((150, 150), Image.Resampling.LANCZOS)
+            # Resize the image to a fixed bounding box (max 350x350 pixels)
+            pil_image.thumbnail((350, 350), Image.Resampling.LANCZOS)
             
             # Convert the Pillow Image object into a format Tkinter understands
             alert_image = ImageTk.PhotoImage(pil_image)
@@ -64,7 +63,7 @@ def show_alert_window():
             print(f"[-] Failed to render JPG image file: {e}")
     else:
         # Fallback container layout if the resource folder or asset isn't ready
-        fallback_frame = tk.Frame(root, width=120, height=120, bg="#2C3E50")
+        fallback_frame = tk.Frame(root, width=150, height=150, bg="#2C3E50")
         fallback_frame.pack_propagate(False)
         fallback_frame.pack(pady=10)
         
@@ -80,21 +79,19 @@ def show_alert_window():
     # 3. Main Status Description
     message_label = tk.Label(
         root,
-        text="The targeted lab directory has been processed.\n\n"
-             "Files within the 'DUMMY_TARGET' directory have been modified\n"
-             "and appended with the '.locked' extension.",
-        font=("Helvetica", 12),
+        text="You Have Been HACKED\n\n"
+             "data chahiye to paise bhejo agle sem ki fee jama karwani mai ne",
+        font=("Helvetica", 12, "bold"),
         fg="#ECF0F1",
         bg="#1A1A1A",
         justify="center"
     )
-    message_label.pack(pady=15)
+    message_label.pack(pady=10)
 
-    # 4. Action Directive
+    # 4. Action Directive (Fixed string syntax error by adding a comma before the font definition)
     instruction_label = tk.Label(
         root,
-        text="Please execute the Recovery Tool interface to reverse\n"
-             "the modifications and restore access.",
+        text="thore zyada bhejna 1 back bhi clear karni\n",
         font=("Helvetica", 11, "italic"),
         fg="#95A5A6",
         bg="#1A1A1A"
@@ -115,7 +112,7 @@ def show_alert_window():
         pady=8,
         command=root.destroy
     )
-    close_button.pack(pady=(20, 0))
+    close_button.pack(pady=(15, 0))
 
     root.mainloop()
 
